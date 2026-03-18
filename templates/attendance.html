@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance{% endblock %}
+{% block page_title %}Attendance Monitoring{% endblock %}
+
+{% block content %}
+<!-- Filter Controls -->
+<div class="card mb-24">
+    <div class="card-body">
+        <form method="get" action="/attendance" class="form-row" style="align-items:flex-end;">
+            <div class="form-group">
+                <label class="form-label">Class Schedule</label>
+                <select name="schedule_id" class="form-select" required>
+                    <option value="">Select a class</option>
+                    {% for s in schedules %}
+                    <option value="{{ s.id }}" {% if schedule_id == s.id %}selected{% endif %}>
+                        {{ s.subject_name }} &mdash; {{ s.teacher_name }} ({{ s.day_of_week }} {{ s.start_time }}-{{ s.end_time }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="max-width:180px;">
+                <label class="form-label">Date</label>
+                <input type="date" name="date" class="form-input" value="{{ date }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Load Students</button>
+        </form>
+    </div>
+</div>
+
+{% if students is not none and schedule_id %}
+<!-- Attendance Summary -->
+{% set present_count = students | selectattr('status', 'equalto', 'present') | list | length %}
+{% set late_count = students | selectattr('status', 'equalto', 'late') | list | length %}
+{% set absent_count = students | selectattr('status', 'equalto', 'absent') | list | length %}
+
+{% if selected_schedule %}
+<div class="card mb-24" style="background: rgba(110,198,255,0.05); border: 1px solid rgba(110,198,255,0.12);">
+    <div class="card-body" style="padding: 12px 20px;">
+        <strong style="color:var(--accent-blue);">{{ selected_schedule.subject_name }}</strong>
+        <span style="color:var(--text-muted);margin: 0 8px;">&mdash;</span>
+        {{ selected_schedule.teacher_name }}
+        <span style="color:var(--text-muted);margin: 0 8px;">|</span>
+        {{ selected_schedule.classroom_name }}
+        <span style="color:var(--text-muted);margin: 0 8px;">|</span>
+        {{ selected_schedule.day_of_week }} {{ selected_schedule.start_time }}&ndash;{{ selected_schedule.end_time }}
+        <span style="float:right;">
+            <span class="status-pill status-present">{{ present_count }} Present</span>
+            <span class="status-pill status-late">{{ late_count }} Late</span>
+            <span class="status-pill status-absent">{{ absent_count }} Absent</span>
+        </span>
+    </div>
+</div>
+{% endif %}
+
+<!-- Student Attendance Form -->
+{% if students | length > 0 %}
+<form method="post" action="/attendance/mark">
+    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+    <input type="hidden" name="schedule_id" value="{{ schedule_id }}">
+    <input type="hidden" name="date" value="{{ date }}">
+
+    <div class="card mb-24">
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th>Student Name</th>
+                        <th style="width:320px;text-align:center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td style="color:var(--text-muted);">{{ loop.index }}</td>
+                        <td><strong>{{ s.full_name }}</strong></td>
+                        <td>
+                            <div class="status-pills">
+                                <input type="radio" id="st_{{ s.student_id }}_present"
+                                       name="status_{{ s.student_id }}" value="present"
+                                       {% if s.status == 'present' %}checked{% endif %}>
+                                <label for="st_{{ s.student_id }}_present" class="pill pill-present">Present</label>
+
+                                <input type="radio" id="st_{{ s.student_id }}_late"
+                                       name="status_{{ s.student_id }}" value="late"
+                                       {% if s.status == 'late' %}checked{% endif %}>
+                                <label for="st_{{ s.student_id }}_late" class="pill pill-late">Late</label>
+
+                                <input type="radio" id="st_{{ s.student_id }}_absent"
+                                       name="status_{{ s.student_id }}" value="absent"
+                                       {% if s.status == 'absent' or not s.status %}checked{% endif %}>
+                                <label for="st_{{ s.student_id }}_absent" class="pill pill-absent">Absent</label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;">
+        <button type="submit" class="btn btn-primary">Save Attendance</button>
+        <button type="button" class="btn btn-ghost" onclick="markAll('present')">Mark All Present</button>
+        <button type="button" class="btn btn-ghost" onclick="markAll('absent')">Mark All Absent</button>
+    </div>
+</form>
+{% else %}
+<div class="card">
+    <div class="card-body" style="text-align:center;padding:40px;color:var(--text-muted);">
+        No students enrolled in this subject. Enroll students from the
+        <a href="/users" style="color:var(--accent-blue);">Users</a> page.
+    </div>
+</div>
+{% endif %}
+
+{% elif not schedule_id %}
+<div class="card">
+    <div class="card-body" style="text-align:center;padding:40px;color:var(--text-muted);">
+        Select a class schedule and date above to load the attendance sheet.
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markAll(status) {
+    document.querySelectorAll('input[type="radio"][value="' + status + '"]').forEach(function(r) {
+        r.checked = true;
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}My Enrollments{% endblock %}
+{% block page_title %}My Enrollments{% endblock %}
+
+{% block content %}
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+    <!-- Available Subjects -->
+    <div class="card">
+        <div class="card-head">Available Subjects</div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Code</th>
+                        <th style="width:100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set enrolled_ids = enrolled | map(attribute='id') | list %}
+                    {% set available = [] %}
+                    {% for s in subjects %}
+                        {% if s.id not in enrolled_ids %}
+                            {% if available.append(s) %}{% endif %}
+                            <tr>
+                                <td><strong>{{ s.name }}</strong></td>
+                                <td style="color:var(--text-muted);">{{ s.code }}</td>
+                                <td>
+                                    <form method="post" action="/my-enrollments/enroll">
+                                        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                                        <input type="hidden" name="subject_id" value="{{ s.id }}">
+                                        <button type="submit" class="btn btn-primary" style="padding:4px 14px;font-size:0.82em;">Enroll</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    {% if enrolled | length == subjects | length %}
+                        <tr class="empty-row"><td colspan="3">You're enrolled in all available subjects.</td></tr>
+                    {% endif %}
+                    {% if subjects | length == 0 %}
+                        <tr class="empty-row"><td colspan="3">No subjects available yet.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- My Enrolled Subjects -->
+    <div class="card">
+        <div class="card-head">My Enrolled Subjects</div>
+        <div class="card-body" style="padding:0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Code</th>
+                        <th style="width:100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in enrolled %}
+                    <tr>
+                        <td><strong>{{ s.name }}</strong></td>
+                        <td style="color:var(--text-muted);">{{ s.code }}</td>
+                        <td>
+                            <form method="post" action="/my-enrollments/drop"
+                                  onsubmit="return confirm('Drop {{ s.name }}?');">
+                                <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                                <input type="hidden" name="subject_id" value="{{ s.id }}">
+                                <button type="submit" class="btn-danger-sm">Drop</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% if not enrolled %}
+                    <tr class="empty-row"><td colspan="3">You haven't enrolled in any subjects yet.</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

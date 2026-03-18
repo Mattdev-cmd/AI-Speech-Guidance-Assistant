@@ -1,0 +1,20 @@
+[Unit]
+Description=AI Speech Guidance Self-Assistant
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/speech-guidance-assistant
+ExecStart=/home/pi/speech-guidance-assistant/venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Hardware access
+SupplementaryGroups=audio video gpio spi i2c
+
+[Install]
+WantedBy=multi-user.target

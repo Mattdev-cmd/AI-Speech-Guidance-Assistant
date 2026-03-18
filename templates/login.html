@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In &mdash; EduGuide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0c0e1a;
+            --bg-card: rgba(22, 27, 51, 0.85);
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --text-primary: #e8eaf0;
+            --text-secondary: #8b92a8;
+            --text-muted: #5a6178;
+            --accent-blue: #6ec6ff;
+            --accent-purple: #c49cff;
+            --accent-red: #ff6b6b;
+            --accent-green: #6ee7a0;
+            --radius-md: 12px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            width: 600px; height: 600px;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.12;
+            background: var(--accent-blue);
+            top: -150px; left: -150px;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.1;
+            background: var(--accent-purple);
+            bottom: -100px; right: -100px;
+            pointer-events: none;
+        }
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 40px 36px;
+            width: 400px;
+            max-width: 95vw;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .login-logo-icon {
+            width: 56px; height: 56px;
+            margin: 0 auto 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+        }
+        .login-logo h1 { font-size: 1.2em; font-weight: 600; letter-spacing: -0.3px; }
+        .login-logo p { font-size: 0.78em; color: var(--text-muted); margin-top: 4px; }
+        .alert {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.84em;
+            margin-bottom: 16px;
+            border: 1px solid;
+        }
+        .alert-error { background: rgba(255,107,107,0.08); border-color: rgba(255,107,107,0.2); color: var(--accent-red); }
+        .alert-success { background: rgba(110,231,160,0.08); border-color: rgba(110,231,160,0.2); color: var(--accent-green); }
+        .form-group { margin-bottom: 18px; }
+        .form-label {
+            display: block;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.92em;
+            transition: var(--transition);
+        }
+        .form-input:focus { outline: none; border-color: var(--accent-blue); }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: #0c0e1a;
+            font-family: inherit;
+            font-size: 0.92em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 6px;
+        }
+        .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">
+            <div class="login-logo-icon"><svg viewBox="0 0 24 24" style="width:1.5em;height:1.5em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></div>
+            <h1>EduGuide</h1>
+            <p>Education Management &amp; Speech Guidance</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post">
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input class="form-input" type="text" id="username" name="username"
+                       placeholder="Enter your username" required autocomplete="username" autofocus>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input class="form-input" type="password" id="password" name="password"
+                       placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-login">Sign In</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Schedules{% endblock %}
+{% block page_title %}Class Scheduling{% endblock %}
+
+{% block content %}
+<!-- Day Filter Tabs -->
+<div class="day-tabs">
+    <a href="/schedules" class="day-tab {% if not day_filter %}active{% endif %}">All</a>
+    {% for d in days %}
+    <a href="/schedules?day={{ d }}" class="day-tab {% if day_filter == d %}active{% endif %}">{{ d[:3] }}</a>
+    {% endfor %}
+</div>
+
+<!-- Schedule Table -->
+<div class="card mb-24">
+    <div class="card-head">
+        {% if day_filter %}{{ day_filter }} Schedule{% else %}All Schedules{% endif %}
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                    <th>Classroom</th>
+                    <th>Day</th>
+                    <th>Time</th>
+                    {% if current_user.role == 'admin' %}<th style="width:70px;"></th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if schedules %}
+                    {% for s in schedules %}
+                    <tr>
+                        <td><strong>{{ s.subject_name }}</strong> <span style="color:var(--text-muted);">({{ s.subject_code }})</span></td>
+                        <td>{{ s.teacher_name }}</td>
+                        <td>{{ s.classroom_name }}</td>
+                        <td>{{ s.day_of_week }}</td>
+                        <td style="white-space:nowrap;">{{ s.start_time }} &ndash; {{ s.end_time }}</td>
+                        {% if current_user.role == 'admin' %}
+                        <td>
+                            <form method="post" action="/schedules/delete/{{ s.id }}"
+                                  onsubmit="return confirm('Delete this schedule?');" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                                <button type="submit" class="btn-danger-sm">Delete</button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr class="empty-row"><td colspan="6">No schedules found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if current_user.role == 'admin' %}
+<!-- Add Schedule Form -->
+<div class="card mb-24">
+    <div class="card-head">Add New Schedule</div>
+    <div class="card-body">
+        {% if not subjects or not teachers or not classrooms %}
+        <p style="color:var(--text-muted);font-size:0.88em;">
+            You need at least one subject, one teacher, and one classroom before creating a schedule.
+            Add them in the sections below.
+        </p>
+        {% else %}
+        <form method="post" action="/schedules/add">
+            <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Subject</label>
+                    <select name="subject_id" class="form-select" required>
+                        <option value="">Select subject</option>
+                        {% for s in subjects %}
+                        <option value="{{ s.id }}">{{ s.name }} ({{ s.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teacher</label>
+                    <select name="teacher_id" class="form-select" required>
+                        <option value="">Select teacher</option>
+                        {% for t in teachers %}
+                        <option value="{{ t.id }}">{{ t.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Classroom</label>
+                    <select name="classroom_id" class="form-select" required>
+                        <option value="">Select classroom</option>
+                        {% for c in classrooms %}
+                        <option value="{{ c.id }}">{{ c.name }} ({{ c.capacity }} seats)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Day</label>
+                    <select name="day_of_week" class="form-select" required>
+                        {% for d in days %}
+                        <option value="{{ d }}">{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Start Time</label>
+                    <input type="time" name="start_time" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">End Time</label>
+                    <input type="time" name="end_time" class="form-input" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Schedule</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Add: Subjects and Classrooms -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <!-- Subjects -->
+    <div class="card">
+        <div class="collapsible-header" onclick="this.nextElementSibling.classList.toggle('open')">
+            <span class="card-head" style="padding:0;border:none;">Manage Subjects</span>
+            <svg style="width:12px;height:12px;fill:none;stroke:var(--text-muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="collapsible-body">
+            <div class="card-body" style="padding:0;">
+                <table>
+                    <thead><tr><th>Subject</th><th>Code</th><th style="width:70px;"></th></tr></thead>
+                    <tbody>
+                        {% for s in subjects %}
+                        <tr>
+                            <td>{{ s.name }}</td>
+                            <td style="color:var(--text-muted);">{{ s.code }}</td>
+                            <td>
+                                <form method="post" action="/subjects/delete/{{ s.id }}"
+                                      onsubmit="return confirm('Delete subject? Related schedules will be removed.');">
+                                    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                                    <button type="submit" class="btn-danger-sm">Del</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not subjects %}<tr class="empty-row"><td colspan="3">No subjects yet.</td></tr>{% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body" style="border-top: 1px solid var(--border-subtle);">
+                <form method="post" action="/subjects/add">
+                    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" name="name" class="form-input" placeholder="Subject name" required>
+                        </div>
+                        <div class="form-group" style="max-width:120px;">
+                            <input type="text" name="code" class="form-input" placeholder="Code" required>
+                        </div>
+                        <button type="submit" class="btn btn-ghost" style="align-self:flex-end;">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classrooms -->
+    <div class="card">
+        <div class="collapsible-header" onclick="this.nextElementSibling.classList.toggle('open')">
+            <span class="card-head" style="padding:0;border:none;">Manage Classrooms</span>
+            <svg style="width:12px;height:12px;fill:none;stroke:var(--text-muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="collapsible-body">
+            <div class="card-body" style="padding:0;">
+                <table>
+                    <thead><tr><th>Name</th><th>Capacity</th><th style="width:70px;"></th></tr></thead>
+                    <tbody>
+                        {% for c in classrooms %}
+                        <tr>
+                            <td>{{ c.name }}</td>
+                            <td style="color:var(--text-muted);">{{ c.capacity }}</td>
+                            <td>
+                                <form method="post" action="/classrooms/delete/{{ c.id }}"
+                                      onsubmit="return confirm('Delete classroom? Related schedules will be removed.');">
+                                    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                                    <button type="submit" class="btn-danger-sm">Del</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not classrooms %}<tr class="empty-row"><td colspan="3">No classrooms yet.</td></tr>{% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body" style="border-top: 1px solid var(--border-subtle);">
+                <form method="post" action="/classrooms/add">
+                    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" name="name" class="form-input" placeholder="Room name" required>
+                        </div>
+                        <div class="form-group" style="max-width:100px;">
+                            <input type="number" name="capacity" class="form-input" placeholder="30" value="30" min="1">
+                        </div>
+                        <button type="submit" class="btn btn-ghost" style="align-self:flex-end;">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

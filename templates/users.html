@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Users{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<!-- User Table -->
+<div class="card mb-24">
+    <div class="card-head">All Users</div>
+    <div class="card-body" style="padding:0;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th style="width:200px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><strong>{{ u.full_name }}</strong></td>
+                    <td style="color:var(--text-muted);">{{ u.username }}</td>
+                    <td>
+                        <span class="badge badge-{{ u.role }}">{{ u.role | title }}</span>
+                    </td>
+                    <td>
+                        {% if u.role == 'student' %}
+                        <button type="button" class="btn btn-ghost"
+                                onclick="openEnrollment({{ u.id }}, '{{ u.full_name }}')">Enrollments</button>
+                        {% endif %}
+                        {% if u.id != current_user.id %}
+                        <form method="post" action="/users/delete/{{ u.id }}" style="display:inline;"
+                              onsubmit="return confirm('Delete user {{ u.full_name }}?');">
+                            <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                            <button type="submit" class="btn-danger-sm">Delete</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not users %}
+                <tr class="empty-row"><td colspan="4">No users found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Form -->
+<div class="card mb-24">
+    <div class="card-head">Add New User</div>
+    <div class="card-body">
+        <form method="post" action="/users/add">
+            <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="full_name" class="form-input" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-input" placeholder="johndoe" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-input" placeholder="Min 4 characters" required minlength="4">
+                </div>
+                <div class="form-group" style="max-width:160px;">
+                    <label class="form-label">Role</label>
+                    <select name="role" class="form-select" required>
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Create User</button>
+        </form>
+    </div>
+</div>
+
+<!-- Enrollment Modal -->
+<div id="enrollment-modal" class="modal-overlay" onclick="if(event.target===this)closeEnrollment()">
+    <div class="modal-box">
+        <div class="modal-head">
+            <span>Manage Enrollments &mdash; <strong id="enroll-student-name"></strong></span>
+            <button onclick="closeEnrollment()" class="modal-close">&times;</button>
+        </div>
+        <form id="enrollment-form" method="post" action="/enrollments/update">
+            <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+            <input type="hidden" name="student_id" id="enroll-student-id">
+            <div class="modal-body" id="enroll-subjects">
+                <p style="color:var(--text-muted);">Loading subjects...</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeEnrollment()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Enrollments</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var allSubjects = {{ subjects | tojson }};
+
+function openEnrollment(studentId, studentName) {
+    document.getElementById('enroll-student-id').value = studentId;
+    document.getElementById('enroll-student-name').textContent = studentName;
+    document.getElementById('enrollment-modal').classList.add('open');
+
+    // Fetch current enrollments
+    fetch('/api/enrollments/' + studentId)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var enrolled = data.subject_ids || [];
+            var html = '';
+            if (allSubjects.length === 0) {
+                html = '<p style="color:var(--text-muted);">No subjects available. Create subjects in the Schedules page first.</p>';
+            } else {
+                allSubjects.forEach(function(s) {
+                    var checked = enrolled.indexOf(s.id) !== -1 ? ' checked' : '';
+                    html += '<label class="enroll-check">' +
+                        '<input type="checkbox" name="subject_ids" value="' + s.id + '"' + checked + '>' +
+                        '<span>' + s.name + ' <span style="color:var(--text-muted);">(' + s.code + ')</span></span>' +
+                        '</label>';
+                });
+            }
+            document.getElementById('enroll-subjects').innerHTML = html;
+        })
+        .catch(function() {
+            document.getElementById('enroll-subjects').innerHTML =
+                '<p style="color:var(--accent-red);">Failed to load enrollments.</p>';
+        });
+}
+
+function closeEnrollment() {
+    document.getElementById('enrollment-modal').classList.remove('open');
+}
+</script>
+{% endblock %}
