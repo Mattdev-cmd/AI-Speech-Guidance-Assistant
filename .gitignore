@@ -1,3 +1,9 @@
+# Configuration with API Keys (keep locally only!)
+config.yaml
+.env
+.env.local
+.env.*.local
+
 # Python
 __pycache__/
 *.py[cod]
@@ -28,8 +34,6 @@ MANIFEST
 venv/
 ENV/
 env/
-.env.local
-.env.*.local
 
 # IDE
 .vscode/
